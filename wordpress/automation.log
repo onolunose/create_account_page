@@ -1,0 +1,30 @@
+09/18/2023 03:09:18 PM - TestStatus - INFO: ### VERIFICATION SUCCESSFUL: Email Invalid Verification Successful
+09/18/2023 03:09:18 PM - TestStatus - INFO: ### VERIFICATION SUCCESSFUL: User name Invalid Verification Successful
+09/18/2023 03:09:18 PM - TestStatus - INFO: ### VERIFICATION SUCCESSFUL: Password Invalid Verification Successful
+09/18/2023 03:09:18 PM - TestStatus - INFO: ### VERIFICATION SUCCESSFUL: Null Value Verification
+09/18/2023 03:09:18 PM - TestStatus - INFO: Validate Null Value - TEST PASSED SUCCESSFULLY
+18/2023 03:09:18 PM - Util - INFO: Expected Text From Application Web UI --> :: Enter a working email address, so you can receive our messages.
+09/18/2023 03:09:18 PM - Util - INFO: ### VERIFICATION MATCHED !!!
+09/18/2023 03:09:18 PM - Util - INFO: Actual Text From Application Web UI --> :: Enter a username of your choice.
+09/18/2023 03:09:18 PM - Util - INFO: Expected Text From Application Web UI --> :: Enter a username of your choice.
+09/18/2023 03:09:18 PM - Util - INFO: ### VERIFICATION MATCHED !!!
+09/18/2023 03:09:18 PM - Util - INFO: Actual Text From Application Web UI --> :: Don't forget to enter a password.
+09/18/2023 03:09:18 PM - Util - INFO: Expected Text From Application Web UI --> :: Don't forget to enter a password.
+09/18/2023 03:09:18 PM - Util - INFO: ### VERIFICATION MATCHED !!!
+23 03:09:08 PM - LoginPage - INFO: Element found with locator: //div//button[contains(text(), 'Accept')] and  locatorType: xpath
+09/18/2023 03:09:09 PM - LoginPage - INFO: Clicked on element with locator: //div//button[contains(text(), 'Accept')] locatorType: xpath
+09/18/2023 03:09:12 PM - LoginPage - INFO: Element found with locator: //div//input[contains(@id, 'password')] and  locatorType: xpath
+09/18/2023 03:09:12 PM - LoginPage - INFO: Clicked on element with locator: //div//input[contains(@id, 'password')] locatorType: xpath
+09/18/2023 03:09:15 PM - LoginPage - INFO: Element found with locator: //div//input[contains(@id, 'password')] and  locatorType: xpath
+09/18/2023 03:09:15 PM - LoginPage - INFO: Cannot send data on the element with locator: //div//input[contains(@id, 'password')] locatorType: xpath
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element found with locator: //button[contains(text(), 'Create')] and  locatorType: xpath
+09/18/2023 03:09:18 PM - LoginPage - INFO: Clicked on element with locator: //button[contains(text(), 'Create')] locatorType: xpath
+09/18/2023 03:09:18 PM - LoginPage - INFO: Waiting for maximum :: 80 :: seconds for element to be clickable
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element appeared on the web page
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element present with locator:  locatorType: id
+09/18/2023 03:09:18 PM - LoginPage - INFO: Waiting for maximum :: 80 :: seconds for element to be clickable
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element appeared on the web page
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element present with locator:  locatorType: id
+09/18/2023 03:09:18 PM - LoginPage - INFO: Waiting for maximum :: 80 :: seconds for element to be clickable
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element appeared on the web page
+09/18/2023 03:09:18 PM - LoginPage - INFO: Element present with locator:  locatorType: id
