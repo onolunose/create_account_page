@@ -1,358 +1,807 @@
-import utilities.custom_logger as cl
+"""
+Login Page Object for Verbatimly - Authentication Testing
+Covers login, logout, password reset, and Google authentication
+"""
 
 import logging
 from base.basepage import BasePage
 from utilities.util import Util
-from selenium.common.exceptions import*
+import utilities.custom_logger as cl
+import time
+import os
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
 
-class LoginPage(BasePage):
-    """
-            Initialize LoginPage class with driver instance and NavigationPage instance.
-
-            Args:
-            - driver: WebDriver instance.
-            """
-
-
-    log2 = Util()
-    log = cl.customLogger(logging.DEBUG)
+class LoginPage2(BasePage):
+    """Enhanced page object for Verbatimly authentication functionality"""
 
     def __init__(self, driver):
         super().__init__(driver)
         self.driver = driver
+        self.log = cl.customLogger(logging.DEBUG)
+        self.util = Util()
 
+    # NAVIGATION LOCATORS (From Login Page HTML)
+    _verbatimly_logo = "//span[text()='Verbatimly']"
+    _back_to_home_button = "//button[contains(text(), 'Back to home')]"
+    _back_to_signin_button = "//a[contains(text(), 'Back to sign in')] | //button[contains(text(), 'Back to sign in')]"
 
-    # Locators
-    _start_link = "//a[contains(text(), 'Started')]"
-    _email_field = "//input[contains(@id, 'email')]"
-    _password_field = "//div//input[contains(@id, 'password')]"
-    _user_name_field = "//div//input[contains(@id, 'username')]"
-    _cookies = "//div//button[contains(text(), 'Accept')]"
-    _create_account = "//button[contains(text(), 'Create')]"
-    # _search_domain = "//form//input[contains(@id, 'search')]"
-    _choose_domain_later = "(//button//span[contains(text(), 'domain')])[2]"  # wait for some 3sec to load
-    _start_with_free = "(//div//button[contains(text(), 'Free')])[1]"
-    _sell_online = "(//span//input[contains(@id, 'select-card-checkbox-1')])[1]"
-    _other = "(//div//span[contains(text(), 'Other')])[1]"
-    _continue = "(//div//button[contains(text(), 'Continue')])[1]"  # same with second continue
-    _store_name = "(//input[contains(@id, 'siteTitle')])[1]"
-    _tagline = "(//input[contains(@id, 'tagline')])[1]"
-    _continue2 = "(//div//button[contains(text(), 'Continue')])[1]"  # same with second continue
-    _skip_for_now = "(//div//button[contains(text(), 'Skip')])[1]"
-    _my_store = "(//div//span[contains(text(), 'Site')])[1]"  # This for login validation 1
-    _icon = "(//span//img[contains(@alt, 'My Profile')])[1]"  # second login verification
-    _log_out = "(//button//span[contains(text(), 'out')])[1]"
-    _word_press_logo = "(//h1//a[contains(text(), 'WordPress')])[1]"  # one verification for succesful logout or the presence of mainlogin
+    # MAIN PAGE LOCATORS
+    _start_for_free_button = "//button[contains(text(), 'Start for free')] | //a[contains(text(), 'Start for free')]"
+    _sign_in_button = "//button[contains(text(), 'Sign in')] | //button[contains(text(), 'Sign up')]"
 
-    #new way to navigate.
-    _continue_with_google = "//span[contains(text(),'Google')]"
-    _email_or_phone_field = "//div//input[contains(@id,'identifierId')]"
-    _create_account_from_gmail = "//div//span[contains(text(),'Create')]"
-    _next_button = "//div//span[contains(text(),'Next')]"
-    # Couldn't find your Google Account....if u use invalid email and click next...but if you use create account
-    #instead it will ask for your vorname and nachnamen
-    _first_name_field = "//input[contains(@id,'firstName')]"
-    _last_name_field = "//input[contains(@id,'lastName')]"
-    _click_weiter = "//span[contains(text(),'Weiter')]"
-    _tag = "//*[@id='day']"
-    _month = "//*[@id='month']"
-    _year = "//*[@id='year']"
-    _gender = "//*[@id='gender']"
-    _click_weiter_again = "//span[contains(text(),'Weiter')]"
+    # LOGIN FORM LOCATORS
+    _email_input = "//input[@id='email']"
+    _email_input_alt = "//input[@name='email']"
+    _password_input = "//input[@id='password']"
+    _password_input_alt = "//input[@name='password']"
+    _remember_me_checkbox = "//input[@type='checkbox']"
+    _login_submit_button = "//button[@type='submit']"
 
-    #after filling the date of birth field and clicking on the second weiter it will suggest 3 gmail for you t
-    #to choose from
-    _choose_suggested_email = "//div[contains(@id,'selectionc0')]" # 1st one....kelvinobutubaga@gmail.com...pass:##ACGTY678cde
-    _choose_suggested_email2 = "//div[contains(@id,'selectionc1')]"
-    _choose_suggested_email3 = "//div[contains(@id,'selectionc2')]" # this 3rd option is to create urself
-    _next_password_field = "(//div//input[contains(@name,'Passwd')])[1]"
-    _confirm_password_field = "(//div//input[contains(@name,'PasswdAgain')])[1]"
-    _click_weiter_again_again =_click_weiter
-    # Next is password field to provide ur phone no. it shows that this is outside the wordpress rather
-    #more of google registration. so I stop here.
+    # PASSWORD VISIBILITY TOGGLE
+    _password_toggle = "//input[@id='password']//following-sibling::button"
+    _password_eye_icon = "//button[.//*[contains(@class, 'lucide-eye')]]"
 
-    #Invalid Alerts Locators:
-    _invalid_email_alert = "//div//span[contains(text(), 'working')]"
-    _invalid_username_alert = "//div//span[contains(text(), 'choice')]"
-    _invalid_password_alert = "//div//span[contains(text(), 'forget')]"
+    # GOOGLE AUTHENTICATION
+    _google_login_button = "//button[contains(., 'Google')]"
+    _google_button_svg = "//button//span[text()='Google']"
 
+    # FORGOT PASSWORD
+    _forgot_password_link = "//a[@href='/auth/forgot-password']"
+    _forgot_password_text = "//a[text()='Forgot password?']"
+    _reset_email_input = "//input[@type='email']"
+    _send_reset_link_button = "//button[.//span[normalize-space()='Send reset link']]"
 
-    def clickStartFree(self):
-        self.elementClick(self._start_link, locatorType="xpath")
+    # SUCCESS/ERROR INDICATORS
+    _welcome_message = "//*[contains(text(), 'Welcome')] | //h1[contains(text(), 'Welcome')]"
+    _welcome_back_message = "//h1[text()='Welcome back']"
+    _check_your_email_message = "//*[contains(text(), 'Check your email')] | //h1[contains(text(), 'Check your email')]"
+    _dashboard_indicator = "//*[contains(text(), 'Dashboard')] | //*[contains(text(), 'Total Files')] | //*[contains(text(), 'Manage your transcriptions')]"
 
-    def emailField(self):
-        self.elementClick(self._email_field, locatorType="xpath")
+    # USER PROFILE AND LOGOUT
+    _user_profile_button = "//div[normalize-space(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'))='free plan']"
+    _user_dropdown_button = "//div[text()='TO']"
+    _user_initials_button = "//div[text()='TO'] | //button[contains(text(), 'TO')] | //div[contains(@class, 'avatar')]"
+    _profile_menu_button = "//button[.//*[contains(@class, 'profile')]] | //div[contains(@class, 'user-avatar')]"
+    _sign_out_button = "//button[contains(text(), 'Sign out')] | //a[contains(text(), 'Sign out')] | //*[contains(text(), 'Logout')]"
 
-    def enterEmail(self, email):
-        self.sendKeys(email, self._email_field, locatorType="xpath")
+    # VALIDATION MESSAGES
+    _error_message = "//div[contains(@class, 'error')] | //span[contains(@class, 'error')] | //*[contains(@class, 'alert')]"
+    _validation_message = "//div[contains(@class, 'validation')] | //span[contains(@class, 'invalid')]"
 
-    def usernameField(self):
-        self.elementClick(self._user_name_field, locatorType="xpath")
+    # PAGE TITLES AND HEADINGS
+    _page_title = "//h1 | //h2 | //title"
+    _login_heading = "//h1[contains(text(), 'Sign in')] | //h2[contains(text(), 'Login')] | //h1[contains(text(), 'Welcome back')]"
 
-    def enterUserName(self, username):
-        self.sendKeys(username, self._user_name_field, locatorType="xpath")
-    def clickCookies(self):
-        self.elementClick(self._cookies, locatorType="xpath")
-    def passwordField(self):
-        self.elementClick(self._password_field, locatorType="xpath")
-    def enterPassword(self, password):
-        self.sendKeys(password, self._password_field, locatorType="xpath")
+    # NAVIGATION METHODS
+    def navigate_to_main_page(self):
+        """Navigate to the main application page"""
+        try:
+            main_url = os.getenv('BASE_URL', 'https://dev-verbatimly.onrender.com')
+            self.driver.get(main_url)
+            self.util.sleep(3)
+            self.log.info(f"Navigated to main page: {main_url}")
+            return True
+        except Exception as e:
+            self.log.error(f"Error navigating to main page: {str(e)}")
+            return False
 
-    def createAccount(self):
-        self.elementClick(self._create_account, locatorType="xpath")
-    def chooseDomainname(self):
-        self.elementClick(self._choose_domain_later, locatorType="xpath")
-    def startFree(self):
-        self.elementClick(self._start_with_free, locatorType="xpath")
-    def sellOnline(self):
-        self.elementClick(self._sell_online, locatorType="xpath")
-    def other(self):
-        self.elementClick(self._other, locatorType="xpath")
+    def navigate_to_login_page(self):
+        """Navigate to login page via Sign In button"""
+        try:
+            # First go to main page
+            if not self.navigate_to_main_page():
+                return False
 
-    def clickContinue(self):
-        self.elementClick(self._continue, locatorType="xpath")
-    # def storeName(self):
-    #     self.elementClick(self._store_name, locatorType="xpath")
-    # def tagLine(self):
-    #     self.elementClick(self._tagline, locatorType="xpath")
-    def skipForNow(self):
-        self.elementClick(self._skip_for_now, locatorType="xpath")  # wait for page to load like 3secs
+            # Look for and click Sign In button
+            if self.isElementPresent(self._sign_in_button, "xpath"):
+                self.elementClick(self._sign_in_button, "xpath")
+                self.util.sleep(2)
+                self.log.info("Clicked Sign In button")
+                return True
+            else:
+                # Try direct navigation to login URL
+                login_url = f"{os.getenv('BASE_URL', 'https://dev-verbatimly.onrender.com')}/auth/login"
+                self.driver.get(login_url)
+                self.util.sleep(2)
+                self.log.info(f"Direct navigation to login page: {login_url}")
+                return True
+        except Exception as e:
+            self.log.error(f"Error navigating to login page: {str(e)}")
+            return False
 
-    def createAccountPage(self, email="", password="", username=""):
-        """
-                Perform login action.
+    def navigate_to_forgot_password_page(self):
+        """Navigate to forgot password page """
+        try:
+            if not self.navigate_to_login_page():
+                return False
 
-                Args:
-                - email (str): Email address for login.
-                - password (str): Password for login.
-                """
-        self.clickStartFree()
+            if self.isElementPresent(self._forgot_password_link, "xpath"):
+                self.elementClick(self._forgot_password_link, "xpath")
+                self.util.sleep(2)
+                self.log.info("Navigated to forgot password page using href")
+                return True
+            # Fallback using text
+            elif self.isElementPresent(self._forgot_password_text, "xpath"):
+                self.elementClick(self._forgot_password_text, "xpath")
+                self.util.sleep(2)
+                self.log.info("Navigated to forgot password page using text")
+                return True
+            else:
+                self.log.error("Forgot password link not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error navigating to forgot password page: {str(e)}")
+            return False
 
-        self.emailField()
-        self.log2.sleep(3)
-        self.enterEmail(email)
-        self.log2.sleep(3)
-        self.usernameField()
-        self.log2.sleep(3)
-        self.enterUserName(username)
-        self.clickCookies()
-        self.log2.sleep(3)
-        self.passwordField()
-        self.log2.sleep(3)
-        self.enterPassword(password)
-        self.log2.sleep(3)
-        self.createAccount()
-        self.log2.sleep(3)
+    # ClearFIELD
+    def clear_field_safely(self, locator, locator_type="xpath"):
+        """Safely clear a field with multiple methods"""
+        try:
+            element = self.getElement(locator, locator_type)
+            if element:
+                # Method 1: Select all and delete
+                element.click()
+                element.send_keys(Keys.CONTROL + "a")
+                element.send_keys(Keys.DELETE)
+                time.sleep(0.2)
 
-        self.chooseDomainname()
-        self.startFree()
-        self.log2.sleep(3)
-        self.sellOnline()
-        self.log2.sleep(3)
-        self.other()
-        self.log2.sleep(3)
-        self.clickContinue()
-        self.log2.sleep(3)
-        self.clickContinue()
-        self.log2.sleep(3)
+                # Method 2: Clear if still has content
+                if element.get_attribute('value'):
+                    element.clear()
+                    time.sleep(0.2)
 
-        self.skipForNow()
+                # Method 3: Backspace if still has content
+                current_value = element.get_attribute('value')
+                if current_value:
+                    for _ in range(len(current_value)):
+                        element.send_keys(Keys.BACKSPACE)
+                        time.sleep(0.1)
 
-    def createAccountPage2(self, email="", password="", username=""):
-        """
-                Perform login action.
+                self.log.info("Field cleared successfully")
+                return True
+        except Exception as e:
+            self.log.error(f"Error clearing field: {str(e)}")
+            return False
 
-                Args:
-                - email (str): Email address for login.
-                - password (str): Password for login.
-                """
-        self.clickStartFree()
+    def enter_email(self, email):
+        """Enter email address with field clearing"""
+        try:
+            # Primary locator
+            if self.isElementPresent(self._email_input, "xpath"):
+                self.clear_field_safely(self._email_input)
+                self.sendKeys(email, self._email_input, "xpath")
+                self.log.info(f"Entered email: {email}")
+                return True
+            # Fallback locator for self healing
+            elif self.isElementPresent(self._email_input_alt, "xpath"):
+                self.clear_field_safely(self._email_input_alt)
+                self.sendKeys(email, self._email_input_alt, "xpath")
+                self.log.info(f"Entered email: {email}")
+                return True
+            else:
+                self.log.error("Email input field not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error entering email: {str(e)}")
+            return False
 
-        self.emailField()
-        self.log2.sleep(3)
-        self.enterEmail(email)
-        self.log2.sleep(3)
-        self.usernameField()
-        self.log2.sleep(3)
-        self.enterUserName(username)
-        self.clickCookies()
-        self.log2.sleep(3)
-        self.passwordField()
-        self.log2.sleep(3)
-        self.enterPassword(password)
-        self.log2.sleep(3)
-        self.createAccount()
-    def verifyAccountSuccessful(self):
-        """
-                Verify if login successful.
+    def enter_password(self, password):
+        """Enter password with field clearing """
+        try:
+            # Primary locator
+            if self.isElementPresent(self._password_input, "xpath"):
+                self.clear_field_safely(self._password_input)
+                self.sendKeys(password, self._password_input, "xpath")
+                self.log.info("Entered password")
+                return True
+            # Fallback locator self healing
+            elif self.isElementPresent(self._password_input_alt, "xpath"):
+                self.clear_field_safely(self._password_input_alt)
+                self.sendKeys(password, self._password_input_alt, "xpath")
+                self.log.info("Entered password")
+                return True
+            else:
+                self.log.error("Password input field not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error entering password: {str(e)}")
+            return False
 
-                Returns:
-                - bool: True if login was successful, False otherwise.
-                """
-        result_first = self.waitForElement(self._my_store,
-                                           locatorType="xpath")
-        result = self.isElementPresent(locator=self._my_store,
-                                       locatorType="xpath")
-        return result
-    def verifyAccountSuccessful2(self):
+    def check_remember_me(self):
+        """Check the remember me checkbox if present"""
+        try:
+            if self.isElementPresent(self._remember_me_checkbox, "xpath"):
+                checkbox = self.getElement(self._remember_me_checkbox, "xpath")
+                if checkbox and not checkbox.is_selected():
+                    self.elementClick(self._remember_me_checkbox, "xpath")
+                    self.log.info("Checked remember me checkbox")
+                return True
+            return True  # Not required, so return True
+        except Exception as e:
+            self.log.error(f"Error with remember me checkbox: {str(e)}")
+            return True  # Not critical, continue
 
+    def click_login_button(self):
+        """Click the login/sign in button"""
+        try:
+            if self.isElementPresent(self._login_submit_button, "xpath"):
+                self.elementClick(self._login_submit_button, "xpath")
+                self.util.sleep(3)  # Wait for login processing
+                self.log.info("Clicked login button")
+                return True
+            else:
+                self.log.error("Login button not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error clicking login button: {str(e)}")
+            return False
 
-        result_first = self.waitForElement(self._icon,
-                                           locatorType="xpath")
-        result = self.isElementPresent(locator=self._icon,
-                                       locatorType="xpath")
-        return result
+    # COMPLETE LOGIN FLOW
+    def perform_login(self, email, password, remember_me=False):
+        """Complete login flow with credentials"""
+        try:
+            self.log.info(f"Starting login process for: {email}")
 
-    def logout(self):
-        logoutLinkElement = self.waitForElement(locator=self._icon,timeout=10,
-                          locatorType="xpath", pollFrequency=1)
-        self.elementClick(element=logoutLinkElement)
-        self.elementClick(locator=self._log_out,
-                          locatorType="xpath")
-    def verifyLogoutSuccessful(self):
+            # Navigate to login page
+            if not self.navigate_to_login_page():
+                return False
 
-        """
-                Verify if logout was successful.
+            # Wait for page to load
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, self._email_input))
+            )
 
-                Returns:
-                - bool: True if logout was successful, False otherwise.
-                """
-        result_first = self.waitForElement(self._word_press_logo,
-                                           locatorType="xpath")
-        actual_text=result_first.text
-        result = self.log2.verifyTextMatch(actualText=actual_text, expectedText="WordPress.com")
-        return result
-    #
-    def clearFields(self):
-        emailField = self.getElement(locator=self._email_field)
-        emailField.clear()
-        passwordField = self.getElement(locator=self._password_field)
-        passwordField.clear()
+            # Enter credentials
+            if not self.enter_email(email):
+                return False
 
-    def verifyinvalidAccountEmptyEmailSuccessful(self):
-        """
-                           Verify if invalid login with empty fields is successful.
+            if not self.enter_password(password):
+                return False
 
-                           Returns:
-                           - bool: True if warning messages are displayed, False otherwise.
-                           """
-        result_email1 = self.waitForElement(self._invalid_email_alert,
-                                              locatorType="xpath")
-        result_email = self.isElementPresent(element=result_email1)
-        if result_email:
-            email_message = result_email1.text
-            element_email = self.log2.verifyTextMatch(actualText=email_message,
-                                                         expectedText="Enter a working email address, so you can receive our messages.")  # This returns boolean will be used in the
-            # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + email_message)
-            return element_email
-        else:
-            print("NO SUCH ELEMENT FOUND" )
-    def verifyinvalidAccountEmptyUsernameSuccessful(self):
-        """
-            Verify if invalid username with empty fields is successful.
+            # Check remember me if requested
+            if remember_me:
+                self.check_remember_me()
 
-             Returns:
-             - bool: True if warning messages are displayed, False otherwise.
-                                   """
-        result_username1 = self.waitForElement(self._invalid_username_alert,
-                                           locatorType="xpath")
-        result_username = self.isElementPresent(element=result_username1)
-        if result_username:
-            username_message = result_username1.text
-            element_username = self.log2.verifyTextMatch(actualText=username_message,
-                                                  expectedText="Enter a username of your choice.")  # This returns boolean will be used in the
-        # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + username_message)
-            return element_username
-        else:
-            print("NO SUCH ELEMENT FOUND" )
+            # Submit login
+            if not self.click_login_button():
+                return False
 
-    def verifyinvalidAccountEmptyPasswordSuccessful(self):
-        """
-                    Verify if invalid password with empty fields is successful.
+            self.log.info("Login process completed")
+            return True
 
-                     Returns:
-                     - bool: True if warning messages are displayed, False otherwise.
-                                           """
-        result_password1 = self.waitForElement(self._invalid_password_alert,
-                                               locatorType="xpath")
-        result_password = self.isElementPresent(element=result_password1)
-        if result_password:
-            password_message = result_password1.text
-            element_password = self.log2.verifyTextMatch(actualText=password_message,
-                                                         expectedText="Don't forget to enter a password.")  # This returns boolean will be used in the
-            # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + password_message)
-            return element_password
-        else:
-            print("NO SUCH ELEMENT FOUND")
+        except Exception as e:
+            self.log.error(f"Error in login process: {str(e)}")
+            return False
 
-    def verifyinvalidAccountNullEmailSuccessful(self):
-        """
-                           Verify if invalid login with empty fields is successful.
+    def login_with_env_credentials(self):
+        """Login using credentials from environment variables"""
+        try:
+            username = os.getenv('USERNAME')
+            password = os.getenv('PASSWORD')
 
-                           Returns:
-                           - bool: True if warning messages are displayed, False otherwise.
-                           """
-        result_email1 = self.waitForElement(self._invalid_email_alert,
-                                            locatorType="xpath")
-        result_email = self.isElementPresent(element=result_email1)
-        if result_email:
-            email_message = result_email1.text
-            element_email = self.log2.verifyTextMatch(actualText=email_message,
-                                                      expectedText="Enter a working email address, so you can receive our messages.")  # This returns boolean will be used in the
-            # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + email_message)
-            return element_email
-        else:
-            print("NO SUCH ELEMENT FOUND")
+            if not username or not password:
+                self.log.error("Username or password not found in environment variables")
+                return False
 
-    def verifyinvalidAccountNullUsernameSuccessful(self):
+            return self.perform_login(username, password)
 
-        """
-            Verify if invalid username with empty fields is successful.
+        except Exception as e:
+            self.log.error(f"Error logging in with env credentials: {str(e)}")
+            return False
 
-             Returns:
-             - bool: True if warning messages are displayed, False otherwise.
-                                   """
-        result_username1 = self.waitForElement(self._invalid_username_alert,
-                                               locatorType="xpath")
-        result_username = self.isElementPresent(element=result_username1)
-        if result_username:
-            username_message = result_username1.text
-            element_username = self.log2.verifyTextMatch(actualText=username_message,
-                                                         expectedText="Enter a username of your choice.")  # This returns boolean will be used in the
-            # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + username_message)
-            return element_username
-        else:
-            print("NO SUCH ELEMENT FOUND")
+    # GOOGLE AUTHENTICATION
+    def click_google_login(self):
+        """Click Google login button - using exact HTML structure"""
+        try:
+            # Primary selector based on actual HTML structure
+            if self.isElementPresent(self._google_login_button, "xpath"):
+                self.elementClick(self._google_login_button, "xpath")
+                self.util.sleep(3)
+                self.log.info("Clicked Google login button")
+                return True
+            # Alternative selector
+            elif self.isElementPresent(self._google_button_svg, "xpath"):
+                # Click parent button of the span
+                self.elementClick("//button[.//span[text()='Google']]", "xpath")
+                self.util.sleep(3)
+                self.log.info("Clicked Google login button (alternative)")
+                return True
+            else:
+                self.log.error("Google login button not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error clicking Google login: {str(e)}")
+            return False
 
-    def verifyinvalidAccountNullPasswordSuccessful(self):
-        """
-                    Verify if invalid password with empty fields is successful.
+    def handle_google_authentication(self):
+        """Handle Google authentication flow"""
+        try:
+            if not self.navigate_to_login_page():
+                return False
 
-                     Returns:
-                     - bool: True if warning messages are displayed, False otherwise.
-                                           """
-        result_password1 = self.waitForElement(self._invalid_password_alert,
-                                               locatorType="xpath")
-        result_password = self.isElementPresent(element=result_password1)
-        if result_password:
-            password_message = result_password1.text
-            element_password = self.log2.verifyTextMatch(actualText=password_message,
-                                                         expectedText="Don't forget to enter a password.")  # This returns boolean will be used in the
-            # test class for assertion. Don't assert anything in the page object.
-            print("Actual text" + password_message)
-            return element_password
-        else:
-            print("NO SUCH ELEMENT FOUND")
+            if not self.click_google_login():
+                return False
 
-    #     continue_login = self.waitForElement(locator=self._continue_IfLogin,
-    #                                          locatorType="xpath", pollFrequency=1)
-    #     self.elementClick(element=continue_login)
-    #     #self.log2.sleep(10)
+            # Wait for Google login page or redirect
+            self.util.sleep(5)
 
-    #     #self.clickLogin()
+            # Check if Google login window opened
+            current_url = self.driver.current_url
+            if "google" in current_url.lower() or "accounts.google.com" in current_url:
+                self.log.info("Google authentication page loaded")
+
+                # Clear and enter Google email if field is present
+                google_email_selectors = [
+                    "//input[@type='email']",
+                    "//input[@id='identifierId']",
+                    "//input[@name='identifier']"
+                ]
+
+                for selector in google_email_selectors:
+                    if self.isElementPresent(selector, "xpath"):
+                        self.clear_field_safely(selector)
+                        username = os.getenv('USERNAME')
+                        if username:
+                            self.sendKeys(username, selector, "xpath")
+                            self.log.info("Entered Google email")
+                        break
+
+                return True
+            else:
+                self.log.info("Google authentication may have completed or failed")
+                return True
+
+        except Exception as e:
+            self.log.error(f"Error in Google authentication: {str(e)}")
+            return False
+
+    # FORGOT PASSWORD FUNCTIONALITY
+    def request_password_reset(self, email):
+        """Request password reset for given email"""
+        try:
+            if not self.navigate_to_forgot_password_page():
+                return False
+
+            # Wait for forgot password page to load
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, self._reset_email_input))
+            )
+
+            # Clear and enter email
+            self.clear_field_safely(self._reset_email_input)
+            self.sendKeys(email, self._reset_email_input, "xpath")
+            self.log.info(f"Entered email for password reset: {email}")
+
+            # Click send reset link
+            if self.isElementPresent(self._send_reset_link_button, "xpath"):
+                self.elementClick(self._send_reset_link_button, "xpath")
+                self.util.sleep(3)
+                self.log.info("Clicked send reset link button")
+                return True
+            else:
+                self.log.error("Send reset link button not found")
+                return False
+
+        except Exception as e:
+            self.log.error(f"Error requesting password reset: {str(e)}")
+            return False
+
+    def request_password_reset_with_env_email(self):
+        """Request password reset using email from environment"""
+        try:
+            email = os.getenv('USERNAME')
+            if not email:
+                self.log.error("Email not found in environment variables")
+                return False
+
+            return self.request_password_reset(email)
+
+        except Exception as e:
+            self.log.error(f"Error requesting password reset with env email: {str(e)}")
+            return False
+
+    # LOGOUT FUNCTIONALITY - UPDATED BASED ON SCREENSHOTS
+    def click_user_profile_menu(self):
+        """Click user profile/dropdown menu - Updated for TO button with gradient"""
+        try:
+            # Primary selector
+            if self.isElementPresent(self._user_profile_button, "xpath"):
+                self.elementClick(self._user_profile_button, "xpath")
+                self.util.sleep(3)  # Wait 3 seconds as specified
+                self.log.info("Clicked user profile menu (gradient TO button)")
+                return True
+
+            # Fallback selector (self healing)
+            elif self.isElementPresent(self._user_dropdown_button, "xpath"):
+                self.elementClick(self._user_dropdown_button, "xpath")
+                self.util.sleep(3)  # Wait 3 seconds as specified
+                self.log.info("Clicked user profile menu (TO text)")
+                return True
+
+            # Additional fallback selectors (self healing)
+            elif self.isElementPresent(self._user_initials_button, "xpath"):
+                self.elementClick(self._user_initials_button, "xpath")
+                self.util.sleep(3)  # Wait 3 seconds as specified
+                self.log.info("Clicked user profile menu (initials button)")
+                return True
+
+            else:
+                self.log.error("User profile menu not found")
+                return False
+
+        except Exception as e:
+            self.log.error(f"Error clicking user profile menu: {str(e)}")
+            return False
+    def click_sign_out(self):
+        """Click sign out button - with scroll down to find it"""
+        try:
+            # Wait for dropdown to be fully loaded
+            self.util.sleep(1)
+
+            if self.isElementPresent(self._sign_out_button, "xpath"):
+                # Scroll the sign out button into view
+                sign_out_element = self.getElement(self._sign_out_button, "xpath")
+                if sign_out_element:
+                    self.driver.execute_script("arguments[0].scrollIntoView(true);", sign_out_element)
+                    self.util.sleep(1)
+
+                    # Click the sign out button
+                    self.elementClick(self._sign_out_button, "xpath")
+                    self.util.sleep(3)
+                    self.log.info("Clicked sign out button")
+                    return True
+                else:
+                    self.log.error("Sign out element found but could not get element object")
+                    return False
+            else:
+                self.log.error("Sign out button not found")
+                return False
+        except Exception as e:
+            self.log.error(f"Error clicking sign out: {str(e)}")
+            return False
+
+    def perform_logout(self):
+        """Complete logout flow"""
+        try:
+            self.log.info("Starting logout process")
+
+            # Click user profile menu (TO button)
+            if not self.click_user_profile_menu():
+                return False
+
+            # Look for sign out button and click it (with scroll down)
+            if not self.click_sign_out():
+                return False
+
+            self.log.info("Logout process completed")
+            return True
+
+        except Exception as e:
+            self.log.error(f"Error in logout process: {str(e)}")
+            return False
+
+    # VERIFICATION METHODS
+    def verify_login_success(self):
+        """Verify successful login by checking for welcome message or dashboard"""
+        try:
+            # Wait a bit for page to load after login
+            self.util.sleep(3)
+
+            # Check for multiple success indicators
+            success_indicators = [
+                self._welcome_message,
+                self._dashboard_indicator,
+                "//h1[contains(text(), 'Welcome')]",
+                "//*[contains(text(), 'Dashboard')]",
+                "//*[contains(text(), 'Total Files')]",
+                "//div[contains(@class, 'dashboard')]"
+            ]
+
+            for indicator in success_indicators:
+                if self.isElementPresent(indicator, "xpath"):
+                    element = self.getElement(indicator, "xpath")
+                    if element and element.is_displayed():
+                        self.log.info(f"Login success verified with: {indicator}")
+                        return True
+
+            # Also check URL for dashboard or user area
+            current_url = self.driver.current_url.lower()
+            url_indicators = ["dashboard", "app", "user", "home"]
+
+            for indicator in url_indicators:
+                if indicator in current_url:
+                    self.log.info(f"Login success verified by URL containing: {indicator}")
+                    return True
+
+            self.log.info("Login success not verified")
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying login success: {str(e)}")
+            return False
+
+    def verify_welcome_back_message(self):
+        """Verify 'Welcome back' message is displayed"""
+        try:
+            welcome_back_selectors = [
+                self._welcome_back_message,
+                "//h1[contains(text(), 'Welcome back')]",
+                "//h2[contains(text(), 'Welcome back')]",
+                "//*[contains(text(), 'Welcome back')]"
+            ]
+
+            for selector in welcome_back_selectors:
+                if self.isElementPresent(selector, "xpath"):
+                    element = self.getElement(selector, "xpath")
+                    if element and element.is_displayed():
+                        self.log.info("'Welcome back' message verified")
+                        return True
+
+            self.log.info("'Welcome back' message not found")
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying welcome back message: {str(e)}")
+            return False
+
+    def verify_check_your_email_message(self):
+        """Verify 'Check your email' message for password reset"""
+        try:
+            email_message_selectors = [
+                self._check_your_email_message,
+                "//h1[contains(text(), 'Check your email')]",
+                "//h2[contains(text(), 'Check your email')]",
+                "//*[contains(text(), 'Check your email')]",
+                "//*[contains(text(), 'password reset link')]"
+            ]
+
+            for selector in email_message_selectors:
+                if self.isElementPresent(selector, "xpath"):
+                    element = self.getElement(selector, "xpath")
+                    if element and element.is_displayed():
+                        self.log.info("'Check your email' message verified")
+                        return True
+
+            self.log.info("'Check your email' message not found")
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying check your email message: {str(e)}")
+            return False
+
+    def verify_logout_success(self):
+        """Verify successful logout by checking for welcome back message"""
+        try:
+            self.util.sleep(2)  # Wait for redirect after logout
+
+            # Check if back to login page
+            if self.verify_welcome_back_message():
+                return True
+
+            # Check URL for login/auth indicators
+            current_url = self.driver.current_url.lower()
+            logout_indicators = ["login", "signin", "auth", "welcome"]
+
+            for indicator in logout_indicators:
+                if indicator in current_url:
+                    self.log.info(f"Logout success verified by URL containing: {indicator}")
+                    return True
+
+            self.log.info(" Logout success not verified")
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying logout success: {str(e)}")
+            return False
+
+    def verify_login_failed(self):
+        """Verify login failed (error message or still on login page)"""
+        try:
+            # Check for error messages
+            if self.isElementPresent(self._error_message, "xpath"):
+                self.log.info(" Login failure verified - error message present")
+                return True
+
+            # Check if still on login page
+            if self.verify_welcome_back_message():
+                self.log.info("Login failure verified - still on login page")
+                return True
+
+            # Check URL still contains login indicators
+            current_url = self.driver.current_url.lower()
+            if any(indicator in current_url for indicator in ["login", "signin", "auth"]):
+                self.log.info("Login failure verified - still on auth page")
+                return True
+
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying login failure: {str(e)}")
+            return False
+
+    # NAVIGATION VERIFICATION
+    def verify_back_to_signin_navigation(self):
+        """Verify back to sign in navigation works"""
+        try:
+            if self.isElementPresent(self._back_to_signin_button, "xpath"):
+                self.elementClick(self._back_to_signin_button, "xpath")
+                self.util.sleep(2)
+
+                # Verify we're back to login page
+                return self.verify_welcome_back_message()
+
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error verifying back to signin navigation: {str(e)}")
+            return False
+
+    # UTILITY METHODS
+    def get_current_page_title(self):
+        """Get current page title"""
+        try:
+            return self.driver.title
+        except Exception as e:
+            self.log.error(f"Error getting page title: {str(e)}")
+            return ""
+
+    def get_current_url(self):
+        """Get current URL"""
+        try:
+            return self.driver.current_url
+        except Exception as e:
+            self.log.error(f"Error getting current URL: {str(e)}")
+            return ""
+
+    def take_screenshot(self, filename=None):
+        """Take screenshot for debugging"""
+        try:
+            if filename is None:
+                filename = f"login_screenshot_{int(time.time())}.png"
+
+            self.driver.save_screenshot(filename)
+            self.log.info(f"Screenshot saved: {filename}")
+            return filename
+        except Exception as e:
+            self.log.error(f"Error taking screenshot: {str(e)}")
+            return None
+
+    def wait_for_element_and_click(self, locator, timeout=10):
+        """Wait for element to be clickable and click it"""
+        try:
+            element = WebDriverWait(self.driver, timeout).until(
+                EC.element_to_be_clickable((By.XPATH, locator))
+            )
+            element.click()
+            return True
+        except Exception as e:
+            self.log.error(f"Error waiting for and clicking element: {str(e)}")
+            return False
+
+    def is_user_logged_in(self):
+        """Check if user is currently logged in"""
+        try:
+            # Check for dashboard or user menu presence
+            login_indicators = [
+                self._user_profile_button,
+                self._dashboard_indicator,
+                "//div[contains(@class, 'dashboard')]",
+                "//button[contains(@class, 'user')]"
+            ]
+
+            for indicator in login_indicators:
+                if self.isElementPresent(indicator, "xpath"):
+                    return True
+
+            # Check URL
+            current_url = self.driver.current_url.lower()
+            if any(indicator in current_url for indicator in ["dashboard", "app", "user"]):
+                return True
+
+            return False
+
+        except Exception as e:
+            self.log.error(f"Error checking login status: {str(e)}")
+            return False
+
+    # ALTERNATIVE VALIDATION METHODS
+    def get_current_url_state(self):
+        """Get current URL to check for navigation changes"""
+        try:
+            return self.driver.current_url
+        except Exception as e:
+            self.log.error(f"Error getting current URL: {str(e)}")
+            return None
+
+    def check_form_field_values(self):
+        """Check if form fields retain their values after failed submission"""
+        try:
+            form_state = {}
+
+            # Check email field value
+            if self.isElementPresent(self._email_input, "xpath"):
+                email_element = self.getElement(self._email_input, "xpath")
+                form_state['email'] = email_element.get_attribute('value') if email_element else ""
+
+            # Check password field value (if visible)
+            if self.isElementPresent(self._password_input, "xpath"):
+                password_element = self.getElement(self._password_input, "xpath")
+                form_state['password'] = password_element.get_attribute('value') if password_element else ""
+
+            self.log.info(f"Form state captured: {form_state}")
+            return form_state
+        except Exception as e:
+            self.log.error(f"Error checking form field values: {str(e)}")
+            return {}
+
+    def is_submit_button_enabled(self):
+        """Check if submit button is enabled/clickable"""
+        try:
+            if self.isElementPresent(self._login_submit_button, "xpath"):
+                button = self.getElement(self._login_submit_button, "xpath")
+                if button:
+                    is_enabled = button.is_enabled()
+                    is_displayed = button.is_displayed()
+                    self.log.info(f"Submit button - Enabled: {is_enabled}, Displayed: {is_displayed}")
+                    return is_enabled and is_displayed
+            return False
+        except Exception as e:
+            self.log.error(f"Error checking submit button state: {str(e)}")
+            return False
+
+    def monitor_network_activity(self):
+        """Monitor if network requests are made during form submission"""
+        try:
+            # Get browser logs to check for network activity
+            logs = self.driver.get_log('performance')
+            network_requests = []
+
+            for log in logs:
+                message = log.get('message', '')
+                if 'Network.request' in message or 'Network.response' in message:
+                    network_requests.append(log)
+
+            self.log.info(f"Network activity detected: {len(network_requests)} requests")
+            return len(network_requests) > 0
+        except Exception as e:
+            self.log.error(f"Error monitoring network activity: {str(e)}")
+            return None
+
+    def validate_form_behavior_on_invalid_data(self, initial_url, initial_form_state):
+        """Comprehensive validation of form behavior with invalid data"""
+        try:
+            validation_results = {
+                'url_unchanged': False,
+                'form_data_persisted': False,
+                'submit_button_functional': False,
+                'no_navigation_occurred': False
+            }
+
+            # Check URL hasn't changed (no navigation)
+            current_url = self.get_current_url_state()
+            validation_results['url_unchanged'] = (current_url == initial_url)
+            validation_results['no_navigation_occurred'] = validation_results['url_unchanged']
+
+            # Check form data persistence
+            current_form_state = self.check_form_field_values()
+            if initial_form_state and current_form_state:
+                # Check if email field retained its value
+                email_persisted = (
+                        initial_form_state.get('email', '') == current_form_state.get('email', '') and
+                        current_form_state.get('email', '') != ''
+                )
+                validation_results['form_data_persisted'] = email_persisted
+
+            # Check submit button state
+            validation_results['submit_button_functional'] = self.is_submit_button_enabled()
+
+            self.log.info(f"Form validation results: {validation_results}")
+            return validation_results
+
+        except Exception as e:
+            self.log.error(f"Error validating form behavior: {str(e)}")
+            return None

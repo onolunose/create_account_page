@@ -1,55 +1,51 @@
+# tests/conftest.py
 import pytest
 from base.webdriverfactory import WebDriverFactory
-from pages.home.login_page import LoginPage
 
-
-# This fixture is for setting up and tearing down things that need to be done before and after each test method.
-@pytest.fixture()
-def setUp():
-    print("Running method level setUp")
-    yield  # This is where the test method will execute
-    print("Running method level tearDown")
-
-
-# This fixture is for setting up and tearing down things that need to be done once for each test function.
-# It initializes the browser, logs in, and then quits the browser after the test is done.
-@pytest.fixture(scope="function")
-def oneTimeSetUp(request, browser):
-    print("Running one time setUp")
-
-    # Initializing the WebDriver instance for the specified browser
-    wdf = WebDriverFactory(browser)
-    driver = wdf.getWebDriverInstance()
-
-    # Logging into the application
-    #lp = LoginPage(driver)
-    #lp.login(email="wabcdetest@gmail.com", password="###abc123ABC", username="wabbcdetest")
-
-    # Associating the driver with the current test class, if available
-    if request.cls is not None:
-        request.cls.driver = driver
-
-    yield driver  # This is where the test function will execute
-
-    # Quitting the browser
-    driver.quit()
-    print("Running one time tearDown")
-
-
-# Adding command line options for pytest to specify browser and OS type
+# ---------------- CLI options ----------------
 def pytest_addoption(parser):
-    parser.addoption("--browser")
-    parser.addoption("--osType", help="Type of operating system")
+    parser.addoption("--browser",  action="store", default="chrome",
+                     help="Browser to run: chrome | firefox")
+    parser.addoption("--headless", action="store_true",
+                     help="Run headless")
 
-
-# This fixture returns the browser type specified from the command line (or default if none specified)
+# ---------------- Simple fixtures ------------
 @pytest.fixture(scope="session")
 def browser(request):
     return request.config.getoption("--browser")
 
-
-# This fixture returns the OS type specified from the command line (or default if none specified)
 @pytest.fixture(scope="session")
-def osType(request):
-    return request.config.getoption("--osType")
+def headless(request):
+    return request.config.getoption("--headless")
 
+# Keep your existing 'setUp' usage (no-op fixture)
+@pytest.fixture()
+def setUp():
+    yield
+
+# ---------------- Driver factory -------------
+@pytest.fixture(scope="function")
+def driver_and_cfg(request, browser, headless):
+    """
+    Creates a WebDriver per test using your WebDriverFactory and returns (driver, cfg).
+    Closes the driver after the test.
+    """
+    wdf = WebDriverFactory(browser=browser, headless=headless)
+    driver, cfg = wdf.getWebDriverInstance()
+
+    # expose on test class if present
+    if request.cls:
+        request.cls.driver = driver
+        request.cls.cfg = cfg
+
+    yield driver, cfg
+    driver.quit()
+
+
+@pytest.fixture(scope="function")
+def driver(driver_and_cfg):
+    """
+    Thin wrapper so tests can simply ask for `driver`.
+    """
+    drv, _ = driver_and_cfg
+    return drv
