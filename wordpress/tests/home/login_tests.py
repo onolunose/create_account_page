@@ -51,8 +51,8 @@ class LoginTests2(unittest.TestCase):
 
         try:
             # Get credentials from environment
-            username = os.getenv('USERNAME')
-            password = os.getenv('PASSWORD')
+            username = os.getenv('TEST_USERNAME')
+            password = os.getenv('TEST_PASSWORD')
 
             if not username or not password:
                 self.ts.markFinal("test_valid_login_and_welcome_message", False, "Environment credentials not found")
