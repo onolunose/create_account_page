@@ -1,4 +1,4 @@
-1. Steps to Run the Test Suites in Less Than 2 mins
+1. Steps to Run the Test Suits in Less Than 2 mins
 
 Create a Fresh Virtual Environment in any of your directories
 
@@ -12,13 +12,16 @@ Step 4:  (clean_env) C:\destroy>  git clone https://github.com/onolunose/create_
 
 Step 5:  (clean_env) C:\destroy>  cd create_account_page\WordPress
 
+step 6:  (clean_env) C:\test_env\create_account_page\wordpress>pip install -r requirements.txt
+
 RUN THE UI AND API TEST SUITES
 
-Step 6:  (clean_env) C:\test_env\create_account_page\wordpress>  pytest tests/home/createAccount_tests.py -v --tb=short --disable-warnings -s  
+Step 7:  (clean_env) C:\test_env\create_account_page\wordpress>  pytest tests/home/createAccount_tests.py -v --tb=short --disable-warnings -s  
  
-Step 7:  (clean_env) C:\test_env\create_account_page\wordpress>  pytest tests/home/login_tests.py -v --tb=short --disable-warnings -s
+Step 8:  (clean_env) C:\test_env\create_account_page\wordpress>  pytest tests/home/login_tests.py -v --tb=short --disable-warnings -s
+npm install -g newman
 
-Step 8:  (clean_env) C:\test_env\create_account_page\wordpress>  newman run api_tests/Verbatimly.postman_collection.json -e api_tests/Verbatimly_Environment.postman_environment.json
+Step 9:  (clean_env) C:\test_env\create_account_page\wordpress>  newman run api_tests/Verbatimly.postman_collection.json -e api_tests/Verbatimly_Environment.postman_environment.json
 
 The End...
 
